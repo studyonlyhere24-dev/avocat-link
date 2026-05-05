@@ -4,7 +4,7 @@ import { ShieldCheck, Mail, Lock, ArrowRight, User, Scale, Briefcase, Sparkles }
 import { useEffect, useState } from "react";
 import { useApp, type Role } from "@/lib/store";
 import { useAudit } from "@/lib/audit";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import scalesImg from "@/assets/scales-of-justice.jpg";
 
 export const Route = createFileRoute("/signup")({
