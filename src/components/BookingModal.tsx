@@ -1,9 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X, ShieldCheck, Upload, FileCheck2, User, Fingerprint, CalendarPlus, Loader2, Check } from "lucide-react";
 import { useState, useRef } from "react";
-import type { Lawyer, Consultation } from "@/lib/mock-data";
+import type { Lawyer } from "@/lib/mock-data";
 
 type Phase = "idle" | "uploading" | "scanning" | "secured";
+
+export interface BookingConfirmation {
+  lawyer: Lawyer;
+  date: string;
+  documentName: string;
+}
 
 export function BookingModal({
   lawyer,
@@ -12,7 +18,7 @@ export function BookingModal({
 }: {
   lawyer: Lawyer | null;
   onClose: () => void;
-  onConfirm: (c: Omit<Consultation, "id" | "status">) => void;
+  onConfirm: (c: BookingConfirmation) => void;
 }) {
   const [uploaded, setUploaded] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);

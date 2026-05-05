@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal } from "lucide-react";
 import type { Lawyer, Specialty } from "@/lib/mock-data";
 import { LawyerCard } from "@/components/LawyerCard";
-import { BookingModal } from "@/components/BookingModal";
+import { BookingModal, type BookingConfirmation } from "@/components/BookingModal";
 import { useApp } from "@/lib/store";
 import { useAudit } from "@/lib/audit";
 import { RoleGuard } from "@/components/RoleGuard";
@@ -173,7 +173,7 @@ function DirectoryInner() {
       <BookingModal
         lawyer={selected}
         onClose={() => setSelected(null)}
-        onConfirm={async (c) => {
+        onConfirm={async (c: BookingConfirmation) => {
           try {
             await createConsultation({
               lawyer_id: c.lawyer.id,

@@ -31,3 +31,7 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.local
+.env.*.local
+# Do NOT ignore .env.example — it must be committed
+!.env.example

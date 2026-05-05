@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { NotificationsBell } from "./NotificationsBell";
 import { ThemeToggle } from "./ThemeToggle";
 import type { ComponentType } from "react";
+import { useEffect } from "react";
+import type { Role } from "@/lib/store";
 
 interface NavItem { to: string; label: string; icon: ComponentType<{ className?: string }>; }
 
@@ -33,6 +35,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const loc = useLocation();
   const navigate = useNavigate();
   const items = user?.role === "lawyer" ? lawyerNav : clientNav;
+
+  // Restore session on hard refresh
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!mounted || !data.session) {
+        navigate({ to: "/login" });
+        return;
+      }
+      if (user) return; // already set
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name, email, role, specialty, barreau")
+        .eq("id", data.session.user.id)
+        .maybeSingle();
+      if (!mounted) return;
+      const r: Role = (profile?.role as Role) ?? "client";
+      setUser({
+        name: profile?.name || data.session.user.email || "",
+        email: profile?.email || data.session.user.email || "",
+        role: r,
+        ...(r === "lawyer"
+          ? { specialty: (profile?.specialty as never) ?? "Business", barreau: profile?.barreau ?? "" }
+          : {}),
+      });
+    });
+    return () => { mounted = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const signOut = async () => {
     if (user) {
@@ -102,7 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {user && (
               <div className="surface rounded-xl p-3 flex items-center gap-3">
                 <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-primary/30 to-accent/30 ring-1 ring-accent/60 font-semibold text-sm">
-                  {user.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                  {(user.name || user.email).split(" ").map((n) => n[0]).slice(0, 2).join("")}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{user.name}</div>
@@ -164,7 +195,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 pb-20 md:pb-0">{children}</main>
 
         <footer className="px-6 py-6 text-xs text-muted-foreground flex items-center justify-between">
           <div className="inline-flex items-center gap-2">
@@ -176,6 +207,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </footer>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md">
+        <div className="flex items-center justify-around px-2 py-2">
+          {items.slice(0, 4).map((it) => {
+            const active = loc.pathname === it.to;
+            return (
+              <Link
+                key={it.to}
+                to={it.to}
+                className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-colors ${
+                  active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <it.icon className="h-5 w-5" />
+                <span className="text-[9px] font-semibold uppercase tracking-wider">{it.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

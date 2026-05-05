@@ -1,38 +1,51 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-function createSupabaseClient() {
-  // Vite exposes env vars via import.meta.env.VITE_*
-  // The vite.config.ts maps Vercel's SUPABASE_URL/SUPABASE_ANON_KEY to these
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Vite exposes VITE_* env vars via import.meta.env at build time.
+// On Vercel, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in:
+//   Project Settings → Environment Variables
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-  if (!SUPABASE_URL || SUPABASE_URL === 'undefined' || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'undefined') {
-    console.warn('[Supabase] Environment variables not set. Using placeholder for build.');
-    // Return a placeholder client for build time - will be configured properly at runtime
+function isPlaceholder(v: string | undefined) {
+  return !v || v === 'undefined' || v.includes('placeholder') || v.includes('your-project');
+}
+
+function createSupabaseClient() {
+  if (isPlaceholder(SUPABASE_URL) || isPlaceholder(SUPABASE_ANON_KEY)) {
+    console.warn(
+      '[Avocat-Link] Supabase env vars not configured.\n' +
+      'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel → Project Settings → Environment Variables.\n' +
+      'Auth, database, and messaging will not work until these are set.'
+    );
+    // Return a no-op placeholder so the build succeeds — auth calls will fail with a clear message
     return createClient<Database>(
       'https://placeholder.supabase.co',
       'placeholder-key',
-      { auth: { persistSession: false } }
+      { auth: { persistSession: false, autoRefreshToken: false } }
     );
   }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  return createClient<Database>(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
     auth: {
-      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
-    }
+    },
   });
 }
 
-let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
+// Lazy singleton — created once on first access
+let _client: ReturnType<typeof createSupabaseClient> | null = null;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+function getClient() {
+  if (!_client) _client = createSupabaseClient();
+  return _client;
+}
+
+// Import like: import { supabase } from "@/integrations/supabase/client"
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
   get(_, prop, receiver) {
-    if (!_supabase) _supabase = createSupabaseClient();
-    return Reflect.get(_supabase, prop, receiver);
+    return Reflect.get(getClient(), prop, receiver);
   },
 });

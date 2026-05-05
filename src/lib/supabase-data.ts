@@ -20,7 +20,7 @@ export interface ConsultationRow {
   lawyer_id: string;
   scheduled_at: string;
   document_name: string;
-  status: "Pending" | "Analyzing" | "Confirmed";
+  status: "Pending" | "Analyzing" | "Confirmed" | "Declined";
   created_at: string;
   // joined
   lawyer?: LawyerRow | null;
@@ -94,8 +94,10 @@ export async function createConsultation(input: {
 }
 
 export async function advanceConsultation(id: string, current: ConsultationRow["status"]) {
-  const order: ConsultationRow["status"][] = ["Pending", "Analyzing", "Confirmed"];
-  const next = order[Math.min(order.length - 1, order.indexOf(current) + 1)];
+  if (current === "Declined" || current === "Confirmed") return current;
+  const order: Array<ConsultationRow["status"]> = ["Pending", "Analyzing", "Confirmed"];
+  const idx = order.indexOf(current as "Pending" | "Analyzing" | "Confirmed");
+  const next = order[Math.min(order.length - 1, idx + 1)];
   const { error } = await supabase
     .from("consultations")
     .update({ status: next })
