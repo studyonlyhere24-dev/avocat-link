@@ -1,21 +1,11 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/client",
-  "public": false,
-  "framework": "vite",
-  "nodeVersion": "20.x",
-  "installCommand": "npm install",
-  "env": {
-    "VITE_SUPABASE_URL": "@vite_supabase_url",
-    "VITE_SUPABASE_PUBLISHABLE_KEY": "@vite_supabase_publishable_key"
-  },
   "rewrites": [
     {
       "source": "/assets/:path*",
       "destination": "/assets/:path*"
     },
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
@@ -53,13 +43,6 @@
           "value": "strict-origin-when-cross-origin"
         }
       ]
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/wrangler.json",
-      "destination": "/404",
-      "permanent": true
     }
   ]
 }
